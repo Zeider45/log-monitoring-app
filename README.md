@@ -65,6 +65,19 @@ Inicia el monitor con:
 python -m src.main
 ```
 
+Para iniciar la interfaz gráfica (Tkinter):
+
+```
+python -m src.main --gui
+```
+
+En la GUI puedes:
+
+- Iniciar/detener el monitoreo.
+- Ver gráficos en vivo (alertas por keyword y por contenedor).
+- Cargar/guardar configuración en `.env` (containers, keywords y archivo de alertas).
+- Detectar contenedores en ejecución desde Docker.
+
 La aplicación carga automáticamente los valores desde `.env`.
 
 ## Generar logs de prueba (Docker)
@@ -74,7 +87,7 @@ Este repo incluye una imagen Docker separada que genera logs de forma continua (
 Construye y levanta dos contenedores de ejemplo (`api` y `worker`) con Docker Compose:
 
 ```
-docker compose -f docker/log-generator/compose.yml up --build
+docker compose -f docker/log-generator/docker-compose.yml up --build
 ```
 
 Luego ejecuta el monitor (en otra terminal) usando tu `.env` (por defecto ya coincide con `api,worker`):
@@ -86,7 +99,7 @@ python -m src.main
 Para detener los generadores de logs:
 
 ```
-docker compose -f docker/log-generator/compose.yml down
+docker compose -f docker/log-generator/docker-compose.yml down
 ```
 
 ## Ejemplo

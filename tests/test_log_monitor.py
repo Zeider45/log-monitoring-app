@@ -3,6 +3,7 @@ from pathlib import Path
 from src.monitors.log_monitor import LogMonitor
 from src.parsers.log_parser import LogParser
 from src.services.alert_service import AlertService
+from src.types import AlertEvent
 
 
 class FakeContainer:
@@ -81,5 +82,46 @@ def test_monitor_container_stream_sends_alerts(tmp_path: Path):
     log_monitor.start_monitoring(daemon=True)
     for thread in log_monitor._threads:
         thread.join(timeout=1)
+
+    assert len(alert_service.alerts) == 2
+
+
+def test_alert_service_calls_callback(tmp_path: Path):
+    called: list[AlertEvent] = []
+
+    def on_alert(event: AlertEvent) -> None:
+        called.append(event)
+
+    alert_service = AlertService(alert_log_file=tmp_path / "alerts.jsonl", on_alert=on_alert)
+    event = AlertEvent(
+        timestamp="2026-01-01T00:00:00+00:00",
+        container_name="api",
+        message="ERROR: database unavailable",
+        matched_keyword="ERROR",
+    )
+
+    alert_service.send_alert(event)
+
+    assert called == [event]
+
+
+def test_alert_service_records_multiple_alerts(tmp_path: Path):
+    alert_service = AlertService(alert_log_file=tmp_path / "alerts.jsonl")
+
+    event1 = AlertEvent(
+        timestamp="2026-01-01T00:00:00+00:00",
+        container_name="api",
+        message="ERROR: one",
+        matched_keyword="ERROR",
+    )
+    event2 = AlertEvent(
+        timestamp="2026-01-01T00:00:00+00:00",
+        container_name="api",
+        message="ERROR: two",
+        matched_keyword="ERROR",
+    )
+
+    alert_service.send_alert(event1)
+    alert_service.send_alert(event2)
 
     assert len(alert_service.alerts) == 2

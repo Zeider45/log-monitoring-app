@@ -188,7 +188,7 @@ Pasos típicos:
 1. Levanta generadores (`api` y `worker`):
 
 ```bash
-docker compose -f docker/log-generator/compose.yml up --build
+docker compose -f docker/log-generator/docker-compose.yml up --build
 ```
 
 2. En otra terminal, ejecuta el monitor:
@@ -202,7 +202,7 @@ python -m src.main
 4. Para apagar generadores:
 
 ```bash
-docker compose -f docker/log-generator/compose.yml down
+docker compose -f docker/log-generator/docker-compose.yml down
 ```
 
 ---

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from threading import Event, Thread
-from typing import Iterable
+from typing import Callable, Iterable
 
 import docker
 from docker.errors import DockerException, NotFound
@@ -18,11 +18,15 @@ class LogMonitor:
         alert_service: AlertService,
         parser: LogParser | None = None,
         docker_client=None,
+        on_info: Callable[[str], None] | None = None,
+        on_error: Callable[[str], None] | None = None,
     ):
         self.container_names = container_names
         self.alert_service = alert_service
         self.parser = parser or LogParser()
         self.docker_client = docker_client
+        self._on_info = on_info
+        self._on_error = on_error
         self.is_monitoring = False
         self._stop_event = Event()
         self._threads: list[Thread] = []
@@ -76,11 +80,19 @@ class LogMonitor:
                 tail=0,
             )
             self._streams.append(stream)
+            if self._on_info is not None:
+                self._on_info(f"Connected to container: {container_name}")
             self._consume_stream(container_name, stream)
         except NotFound:
-            print(f"Container not found: {container_name}")
+            message = f"Container not found: {container_name}"
+            print(message)
+            if self._on_error is not None:
+                self._on_error(message)
         except DockerException as exc:
-            print(f"Docker error while monitoring {container_name}: {exc}")
+            message = f"Docker error while monitoring {container_name}: {exc}"
+            print(message)
+            if self._on_error is not None:
+                self._on_error(message)
 
     def _consume_stream(self, container_name: str, stream: Iterable[bytes | str]) -> None:
         for raw_line in stream:
@@ -88,3 +100,9 @@ class LogMonitor:
                 break
 
             self.process_log_line(container_name=container_name, raw_line=raw_line)
+
+    @staticmethod
+    def _normalize_raw_line(raw_line: bytes | str) -> str:
+        if isinstance(raw_line, bytes):
+            return raw_line.decode("utf-8", errors="replace").strip()
+        return str(raw_line).strip()
